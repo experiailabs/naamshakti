@@ -35,11 +35,11 @@ import VideoCarousel from "@/components/VideoCarousel";
 // Yantra geometry, diya glow, gold-foil typography
 // ============================================================
 
-const HERO_BG = "client/public/images/hero-bg_f2529d5f.png";
-const LOGO = "client/public/images/logo_3c9d214b.webp";
-const REPORT_MOCKUP = "client/public/images/report-mockup_c52d9b33.png";
-const CELEBRITY_SECTION = "client/public/images/celebrity-section_5908310b.png";
-const GURU_PORTRAIT = "client/public/images/guru-portrait_6e0e8c98.png";
+const HERO_BG = "/images/hero-bg_f2529d5f.png";
+const LOGO = "/images/logo_3c9d214b.webp";
+const REPORT_MOCKUP = "/images/report-mockup_c52d9b33.png";
+const CELEBRITY_SECTION = "/images/celebrity-section_5908310b.png";
+const GURU_PORTRAIT = "/images/guru-portrait_6e0e8c98.png";
 
 // Countdown target: August 15, 2026
 const OFFER_DEADLINE = new Date("2026-08-15T23:59:59+05:30").getTime();
