@@ -1,7 +1,16 @@
+
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { CheckCircle2 as CheckIcon, AlertCircle, Info } from "lucide-react";
 import {
   Star,
   CheckCircle2,
@@ -25,9 +34,11 @@ import {
   ArrowRight,
   IndianRupee,
   Flame,
+  Target,
 } from "lucide-react";
 import LifePathCalculator from "@/components/LifePathCalculator";
 import VideoCarousel from "@/components/VideoCarousel";
+import SocialProofPopup from "@/components/SocialProofPopup";
 
 // ============================================================
 // DESIGN PHILOSOPHY: Celestial Saffron
@@ -162,7 +173,7 @@ function Hero() {
               <span className="text-gold-foil animate-shimmer">Key to Your Destiny</span>
             </h1>
             <p className="text-lg text-muted-foreground max-w-xl leading-relaxed">
-              Discover the hidden numerological power of your name. Get a personalized 25+ page report
+              Discover the hidden numerological power of your name. Get a personalized report
               revealing your lucky numbers, name corrections, wealth-attracting remedies, and the
               exact spelling changes that can transform your life.
             </p>
@@ -363,52 +374,56 @@ function CelebrityStories() {
 function WhatsInside() {
   const features = [
     {
-      icon: <Sparkles className="w-6 h-6" />,
+      // Mystical: Sacred letter/OM vibration symbol
+      icon: (
+        <svg viewBox="0 0 48 48" className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="24" cy="24" r="20" opacity="0.3" />
+          <circle cx="24" cy="24" r="14" opacity="0.5" />
+          <path d="M18 28 Q18 20 24 20 Q30 20 30 26 Q30 30 26 30" />
+          <circle cx="24" cy="16" r="1.5" fill="currentColor" />
+          <path d="M20 34 L28 34" opacity="0.6" />
+          <path d="M24 8 L24 12 M24 36 L24 40 M8 24 L12 24 M36 24 L40 24" opacity="0.4" />
+        </svg>
+      ),
       title: "Name Meaning Decoded",
       hindi: "नाम का गुप्त अर्थ",
       desc: "Decode the hidden power and vibration of every letter in your name.",
     },
     {
-      icon: <CheckCircle2 className="w-6 h-6" />,
+      // Mystical: Yantra / sacred geometry star for perfect spelling
+      icon: (
+        <svg viewBox="0 0 48 48" className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M24 6 L42 38 L6 38 Z" opacity="0.4" />
+          <path d="M24 42 L6 10 L42 10 Z" opacity="0.4" />
+          <circle cx="24" cy="24" r="8" opacity="0.6" />
+          <circle cx="24" cy="24" r="3" fill="currentColor" opacity="0.8" />
+          <path d="M24 14 L24 18 M24 30 L24 34 M14 24 L18 24 M30 24 L34 24" opacity="0.5" />
+        </svg>
+      ),
       title: "Perfect Name Spelling",
       hindi: "सही नाम वर्तनी",
-      desc: "Find the exact spelling that attracts wealth, success, and prosperity.",
-    },
-    {
-      icon: <Star className="w-6 h-6" />,
-      title: "Lucky Numbers & Dates",
-      hindi: "भाग्यशाली अंक और दिन",
       desc: "Discover numbers that enhance your fortune and open new opportunities.",
     },
     {
-      icon: <TrendingUp className="w-6 h-6" />,
-      title: "Wealth & Career Remedies",
-      hindi: "धन और करियर उपाय",
-      desc: "Specific techniques to attract money, clients, and career growth.",
-    },
-    {
-      icon: <Heart className="w-6 h-6" />,
-      title: "Love & Relationship Guide",
-      hindi: "प्रेम और रिश्ते गाइड",
-      desc: "Improve love, family, and social connections through name alignment.",
-    },
-    {
-      icon: <Brain className="w-6 h-6" />,
+      // Mystical: Lo Shu 3x3 magic grid
+      icon: (
+        <svg viewBox="0 0 48 48" className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="8" y="8" width="32" height="32" rx="2" opacity="0.4" />
+          <path d="M8 19 L40 19 M8 29 L40 29 M19 8 L19 40 M29 8 L29 40" opacity="0.5" />
+          <text x="14" y="16.5" fontSize="7" fill="currentColor" stroke="none" opacity="0.8">4</text>
+          <text x="24" y="16.5" fontSize="7" fill="currentColor" stroke="none" opacity="0.8">9</text>
+          <text x="34" y="16.5" fontSize="7" fill="currentColor" stroke="none" opacity="0.8">2</text>
+          <text x="14" y="27" fontSize="7" fill="currentColor" stroke="none" opacity="0.8">3</text>
+          <text x="24" y="27" fontSize="7" fill="currentColor" stroke="none" opacity="0.8">5</text>
+          <text x="34" y="27" fontSize="7" fill="currentColor" stroke="none" opacity="0.8">7</text>
+          <text x="14" y="37.5" fontSize="7" fill="currentColor" stroke="none" opacity="0.8">8</text>
+          <text x="24" y="37.5" fontSize="7" fill="currentColor" stroke="none" opacity="0.8">1</text>
+          <text x="34" y="37.5" fontSize="7" fill="currentColor" stroke="none" opacity="0.8">6</text>
+        </svg>
+      ),
       title: "Lo Shu Grid Analysis",
       hindi: "लो शू ग्रिड विश्लेषण",
       desc: "Identify missing and strong numbers in your birth date grid.",
-    },
-    {
-      icon: <Briefcase className="w-6 h-6" />,
-      title: "Business Name Compatibility",
-      hindi: "व्यापार नाम अनुकूलता",
-      desc: "Choose the right business names, partnerships, and ventures.",
-    },
-    {
-      icon: <Zap className="w-6 h-6" />,
-      title: "Powerful Remedies & Rituals",
-      hindi: "शक्तिशाली उपाय और अनुष्ठान",
-      desc: "Switch words, rituals, and remedies to activate your name's power.",
     },
   ];
 
@@ -418,7 +433,7 @@ function WhatsInside() {
         <div className="text-center mb-12 animate-fade-up">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/30 mb-4">
             <Sparkles className="w-4 h-4 text-primary" />
-            <span className="text-sm font-medium text-primary">25+ Page Personalized Report</span>
+            <span className="text-sm font-medium text-primary">Personalized Report</span>
           </div>
           <h2 className="font-hindi-display text-2xl text-primary/90 mb-2">
             आपकी रिपोर्ट में क्या है
@@ -432,17 +447,18 @@ function WhatsInside() {
           </p>
         </div>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-4xl mx-auto">
           {features.map((feature, i) => (
             <div
               key={feature.title}
-              className="card-premium rounded-xl p-5 animate-fade-up hover:border-primary/40 transition-all duration-300"
+              className="card-premium rounded-xl p-6 animate-fade-up group hover:border-primary/50 hover:glow-saffron transition-all duration-300 cursor-default"
               style={{ transitionDelay: `${i * 50}ms` }}
             >
-              <div className="w-12 h-12 rounded-lg bg-primary/15 flex items-center justify-center text-primary mb-4">
-                {feature.icon}
+              <div className="relative w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/15 to-primary/5 flex items-center justify-center text-primary mb-5 transition-all duration-300 group-hover:scale-110 group-hover:rotate-3 group-hover:bg-gradient-to-br group-hover:from-primary/25 group-hover:to-primary/10 group-hover:text-primary">
+                <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-md bg-primary/20" />
+                <div className="relative z-10">{feature.icon}</div>
               </div>
-              <h4 className="font-display font-semibold text-base text-foreground mb-1">
+              <h4 className="font-display font-semibold text-base text-foreground mb-1 group-hover:text-primary transition-colors duration-300">
                 {feature.title}
               </h4>
               <p className="font-hindi text-sm text-primary/70 mb-2">{feature.hindi}</p>
@@ -576,7 +592,7 @@ function Testimonials() {
         <div className="text-center mb-12 animate-fade-up">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/30 mb-4">
             <Star className="w-4 h-4 fill-primary text-primary" />
-            <span className="text-sm font-medium text-primary">Real WhatsApp Reviews</span>
+            <span className="text-sm font-medium text-primary">Real Customer Reviews</span>
           </div>
           <h2 className="font-hindi-display text-2xl text-primary/90 mb-2">
             हमारे ग्राहक क्या कहते हैं
@@ -653,6 +669,50 @@ function StatsBar() {
   );
 }
 
+// ============= DYNAMIC OBJECTIVE MESSAGES =============
+const OBJECTIVE_MESSAGES: Record<string, { title: string; hindi: string; desc: string }> = {
+  career: {
+    title: "Your name holds the key to career breakthrough!",
+    hindi: "आपका नाम आपके करियर की तरक्की की चाबी है",
+    desc: "Your NaamShakti Report will reveal name vibrations blocking promotions and the exact spelling correction to unlock rapid career growth. Many clients saw promotions within weeks of aligning their name.",
+  },
+  wealth: {
+    title: "Attract abundance with the right name vibration!",
+    hindi: "सही नाम कंपन से धन का आकर्षण बढ़ेगा",
+    desc: "Wealth is energy — and your name's vibration either attracts or repels money. Your report will identify wealth-blocking letters and suggest corrections that align your name with prosperity frequency.",
+  },
+  love: {
+    title: "Your name can transform your relationships!",
+    hindi: "आपका नाम आपके रिश्तों को बदल सकता है",
+    desc: "Certain name vibrations create harmony while others cause friction. Your report will decode the relationship energy in your name and guide corrections that attract love and deepen bonds.",
+  },
+  business: {
+    title: "Align your name for business success!",
+    hindi: "व्यापार सफलता के लिए अपने नाम को संरेखित करें",
+    desc: "Business growth depends on the numerological vibration of your name. Your report will analyze your name's business compatibility and suggest corrections that attract clients, deals, and profits.",
+  },
+  health: {
+    title: "Your name vibration impacts your wellbeing!",
+    hindi: "आपके नाम का कंपन आपके स्वास्थ्य को प्रभावित करता है",
+    desc: "Numerology reveals that certain name vibrations can deplete energy and affect health. Your report will identify imbalances and suggest remedies to restore vitality through name alignment.",
+  },
+  education: {
+    title: "Unlock your full learning potential!",
+    hindi: "अपनी पूरी सीखने की क्षमता को खोलें",
+    desc: "Focus, memory, and academic success are influenced by name vibrations. Your report will reveal corrections that enhance concentration and align your name with educational achievement.",
+  },
+  confidence: {
+    title: "Step into your power with name alignment!",
+    hindi: "नाम संरेखण के साथ अपनी शक्ति में कदम रखें",
+    desc: "Your name's vibration shapes how the world sees you — and how you see yourself. Your report will identify letters that weaken confidence and suggest corrections that amplify personal magnetism.",
+  },
+  marriage: {
+    title: "Harmonize your name for family bliss!",
+    hindi: "परिवार के सुख के लिए अपने नाम को सामंजस्य दें",
+    desc: "Marriage and family harmony are deeply influenced by name vibrations. Your report will analyze compatibility energy and suggest corrections that foster love, peace, and family unity.",
+  },
+};
+
 // ============= OFFER + FORM =============
 function OfferForm() {
   const [formData, setFormData] = useState({
@@ -660,13 +720,97 @@ function OfferForm() {
     dob: "",
     email: "",
     phone: "",
+    objective: "",
   });
   const [submitted, setSubmitted] = useState(false);
+  const [emailTouched, setEmailTouched] = useState(false);
+  const [emailShake, setEmailShake] = useState(false);
+
+  // Common typo domains — suggest correction
+  const TYPO_DOMAINS: Record<string, string> = {
+    "gmail.co": "gmail.com",
+    "gmail.cm": "gmail.com",
+    "gmail.con": "gmail.com",
+    "gmail.ocm": "gmail.com",
+    "gmail.cmo": "gmail.com",
+    "gmai.com": "gmail.com",
+    "gmal.com": "gmail.com",
+    "gmial.com": "gmail.com",
+    "gimail.com": "gmail.com",
+    "gnail.com": "gmail.com",
+    "yahoo.co": "yahoo.com",
+    "yahoo.cm": "yahoo.com",
+    "yahoo.con": "yahoo.com",
+    "yaho.com": "yahoo.com",
+    "yhoo.com": "yahoo.com",
+    "yhaoo.com": "yahoo.com",
+    "hotmail.co": "hotmail.com",
+    "hotmail.cm": "hotmail.com",
+    "hotmail.con": "hotmail.com",
+    "hotmial.com": "hotmail.com",
+    "hotmai.com": "hotmail.com",
+    "outlook.co": "outlook.com",
+    "outlook.cm": "outlook.com",
+    "outlok.com": "outlook.com",
+    "outloook.com": "outlook.com",
+    "rediffmai.com": "rediffmail.com",
+    "rediffmail.co": "rediffmail.com",
+    "yahoo.co.in": "yahoo.in",
+    "ymail.co": "ymail.com",
+    "icloud.co": "icloud.com",
+    "iclod.com": "icloud.com",
+  };
+
+  const validateEmail = (email: string): { status: "empty" | "invalid" | "typo" | "valid"; suggestion?: string; message: string } => {
+    if (!email) return { status: "empty", message: "" };
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return { status: "invalid", message: "Please enter a valid email address — एक मान्य ईमेल दर्ज करें" };
+    }
+
+    // Check for typo domains
+    const domain = email.split("@")[1]?.toLowerCase() ?? "";
+    const corrected = TYPO_DOMAINS[domain];
+    if (corrected) {
+      const suggestedEmail = email.split("@")[0] + "@" + corrected;
+      return {
+        status: "typo",
+        suggestion: suggestedEmail,
+        message: `Did you mean ${suggestedEmail}?`,
+      };
+    }
+
+    // Check for missing TLD (e.g. user@gmail)
+    if (!domain.includes(".") || domain.split(".").pop()!.length < 2) {
+      return { status: "invalid", message: "Email domain looks incomplete — ईमेल डोमेन अधूरा है" };
+    }
+
+    return { status: "valid", message: "Looks good! Your report will be sent here — आपकी रिपोर्ट यहाँ भेजी जाएगी" };
+  };
+
+  const emailValidation = validateEmail(formData.email);
+  const showEmailFeedback = emailTouched && formData.email.length > 0;
+
+  const triggerEmailShake = () => {
+    setEmailShake(true);
+    setEmailTouched(true);
+    setTimeout(() => setEmailShake(false), 400);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (formData.fullName && formData.dob && formData.email && formData.phone) {
+    if (
+      formData.fullName &&
+      formData.dob &&
+      formData.email &&
+      formData.phone &&
+      formData.objective &&
+      emailValidation.status === "valid"
+    ) {
       setSubmitted(true);
+    } else if (emailValidation.status !== "valid") {
+      triggerEmailShake();
     }
   };
 
@@ -720,13 +864,13 @@ function OfferForm() {
                   {/* What you get */}
                   <div className="space-y-2.5 pt-2">
                     {[
-                      "25+ Page Personalized Report",
+                      "Personalized Report",
                       "Name Vibration Analysis (Chaldean method)",
                       "Corrected Name Suggestions for Success",
                       "Lucky Numbers, Days & Colours",
                       "Lo Shu Grid — Missing & Strong Numbers",
                       "Powerful Remedies to Activate Your Name",
-                      "Delivered via Email & WhatsApp",
+                      "Delivered via Email",
                     ].map((item) => (
                       <div key={item} className="flex items-start gap-2">
                         <CheckCircle2 className="w-4 h-4 text-primary mt-0.5 shrink-0" />
@@ -797,6 +941,32 @@ function OfferForm() {
                       />
                     </div>
 
+                    {/* Target Objective Dropdown */}
+                    <div className="space-y-2">
+                      <Label className="text-foreground flex items-center gap-2">
+                        <Target className="w-4 h-4 text-primary" />
+                        Target Objective <span className="font-hindi text-primary/60">(आपका उद्देश्य)</span>
+                      </Label>
+                      <Select
+                        value={formData.objective}
+                        onValueChange={(value) => setFormData({ ...formData, objective: value })}
+                      >
+                        <SelectTrigger className="bg-input border-border focus:border-primary focus:ring-primary/30 text-foreground py-3">
+                          <SelectValue placeholder="What do you want to align your name for?" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="career">Career Growth & Promotion — करियर वृद्धि</SelectItem>
+                          <SelectItem value="wealth">Wealth & Money — धन और संपत्ति</SelectItem>
+                          <SelectItem value="love">Love & Relationships — प्रेम और रिश्ते</SelectItem>
+                          <SelectItem value="business">Business Success — व्यापार सफलता</SelectItem>
+                          <SelectItem value="health">Health & Wellbeing — स्वास्थ्य</SelectItem>
+                          <SelectItem value="education">Education & Studies — शिक्षा</SelectItem>
+                          <SelectItem value="confidence">Personal Power & Confidence — आत्मविश्वास</SelectItem>
+                          <SelectItem value="marriage">Marriage & Family — विवाह और परिवार</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
                     <div className="grid sm:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="email" className="text-foreground flex items-center gap-2">
@@ -810,26 +980,92 @@ function OfferForm() {
                           placeholder="your@email.com"
                           value={formData.email}
                           onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                          className="bg-input border-border focus:border-primary focus:ring-primary/30 text-foreground"
+                          onBlur={() => setEmailTouched(true)}
+                          className={`bg-input border-border focus:ring-primary/30 text-foreground transition-colors ${
+                            emailShake ? "animate-shake" : ""
+                          } ${
+                            showEmailFeedback && emailValidation.status === "valid"
+                              ? "border-green-500/60 focus:border-green-500"
+                              : showEmailFeedback && (emailValidation.status === "invalid" || emailValidation.status === "typo")
+                                ? "border-destructive/60 focus:border-destructive"
+                                : "focus:border-primary"
+                          }`}
                         />
+                        {/* Real-time email validation feedback */}
+                        {showEmailFeedback && emailValidation.status === "valid" && (
+                          <div className="flex items-center gap-1.5 text-xs text-green-500 animate-fade-up">
+                            <CheckIcon className="w-3.5 h-3.5" />
+                            <span>{emailValidation.message}</span>
+                          </div>
+                        )}
+                        {showEmailFeedback && emailValidation.status === "invalid" && (
+                          <div className="flex items-center gap-1.5 text-xs text-destructive animate-fade-up">
+                            <AlertCircle className="w-3.5 h-3.5" />
+                            <span>{emailValidation.message}</span>
+                          </div>
+                        )}
+                        {showEmailFeedback && emailValidation.status === "typo" && emailValidation.suggestion && (
+                          <div className="flex items-center gap-1.5 text-xs text-destructive animate-fade-up flex-wrap">
+                            <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                            <span>{emailValidation.message}</span>
+                            <button
+                              type="button"
+                              onClick={() => setFormData({ ...formData, email: emailValidation.suggestion! })}
+                              className="text-primary font-medium underline hover:text-primary/80 transition-colors"
+                            >
+                              Use this
+                            </button>
+                          </div>
+                        )}
+                        {showEmailFeedback && emailValidation.status === "typo" && (
+                          <p className="text-xs text-muted-foreground">
+                            <Info className="w-3 h-3 inline mr-1" />
+                            Your report will be delivered to this email — please double-check for typos.
+                          </p>
+                        )}
                       </div>
 
                       <div className="space-y-2">
                         <Label htmlFor="phone" className="text-foreground flex items-center gap-2">
                           <Phone className="w-4 h-4 text-primary" />
-                          WhatsApp Number <span className="font-hindi text-primary/60">(व्हाट्सएप)</span>
+                          Phone Number <span className="font-hindi text-primary/60">(फ़ोन नंबर)</span>
                         </Label>
                         <Input
                           id="phone"
                           type="tel"
                           required
-                          placeholder="+91 98765 43210"
+                          placeholder="Your 10-digit phone number"
                           value={formData.phone}
                           onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                           className="bg-input border-border focus:border-primary focus:ring-primary/30 text-foreground"
                         />
                       </div>
                     </div>
+
+                    {/* Dynamic personalized message based on selected objective */}
+                    {formData.objective && (
+                      <div
+                        key={formData.objective}
+                        className="rounded-xl p-4 border border-primary/30 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent animate-fade-up"
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="w-9 h-9 rounded-full bg-primary/20 flex items-center justify-center shrink-0 mt-0.5">
+                            <Sparkles className="w-4 h-4 text-primary" />
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-sm font-semibold text-primary">
+                              {OBJECTIVE_MESSAGES[formData.objective]?.title}
+                            </p>
+                            <p className="font-hindi text-xs text-primary/70">
+                              {OBJECTIVE_MESSAGES[formData.objective]?.hindi}
+                            </p>
+                            <p className="text-sm text-foreground/80 leading-relaxed">
+                              {OBJECTIVE_MESSAGES[formData.objective]?.desc}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
 
                     {/* Submit button */}
                     <Button
@@ -844,7 +1080,7 @@ function OfferForm() {
 
                     <p className="text-xs text-center text-muted-foreground">
                       🔒 Your information is 100% private and secure. Report delivered to your email
-                      and WhatsApp within 24 hours.
+                      within 24 hours.
                     </p>
                   </form>
                 ) : (
@@ -972,12 +1208,12 @@ function FAQ() {
     {
       q: "How and when will I receive my report?",
       qHindi: "मुझे अपनी रिपोर्ट कैसे और कब मिलेगी?",
-      a: "Your personalized report will be sent to your registered email and WhatsApp within 24 hours of payment confirmation. The report is a 25+ page PDF document prepared exclusively for you.",
+      a: "Your personalized report will be sent to your registered email within 24 hours of payment confirmation. The report is a personalized PDF document prepared exclusively for you.",
     },
     {
       q: "What information do I need to provide?",
       qHindi: "मुझे क्या जानकारी देनी होगी?",
-      a: "You need to provide your Full Name, Date of Birth, Email ID, and WhatsApp Number. This information is used to generate your personalized numerology report using the Chaldean and Vedic methods.",
+      a: "You need to provide your Full Name, Date of Birth, Email ID, and Phone Number. This information is used to generate your personalized numerology report using the Chaldean and Vedic methods.",
     },
     {
       q: "Can I request a report for someone else?",
@@ -987,7 +1223,7 @@ function FAQ() {
     {
       q: "What if I don't receive my report?",
       qHindi: "अगर मुझे रिपोर्ट नहीं मिले तो?",
-      a: "You can email us at support@naamshakti.in or WhatsApp us at +91 98765 43210. Our team will ensure your report is delivered promptly.",
+      a: "You can email us at support@naamshakti.in. Our team will ensure your report is delivered promptly.",
     },
   ];
 
@@ -1136,10 +1372,7 @@ function Footer() {
                 <Mail className="w-4 h-4 text-primary" />
                 support@naamshakti.in
               </li>
-              <li className="flex items-center gap-2">
-                <Phone className="w-4 h-4 text-primary" />
-                +91 98765 43210 (WhatsApp)
-              </li>
+
             </ul>
             <div className="flex items-center gap-2 mt-4">
               <div className="flex">
@@ -1226,6 +1459,7 @@ export default function Home() {
       </main>
       <Footer />
       <StickyCTA />
+      <SocialProofPopup />
     </div>
   );
 }

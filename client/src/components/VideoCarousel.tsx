@@ -12,7 +12,13 @@ import {
 // ============================================================
 // Video Carousel — 5 slots for reference videos
 // User will upload actual videos later.
-// Each slot supports a video URL or shows a placeholder.
+//
+// No poster images are provided, so instead of an explicit
+// `posterUrl` we rely on `preload="metadata"`, which makes the
+// browser fetch just enough of the file to paint the video's own
+// first frame as a natural thumbnail. If a video hasn't been
+// uploaded yet (404s), `onError` flips that slot back to the
+// "coming soon" placeholder automatically.
 // ============================================================
 
 interface VideoSlot {
@@ -21,65 +27,76 @@ interface VideoSlot {
   hindiTitle: string;
   description: string;
   videoUrl: string | null;
-  posterUrl: string | null;
 }
 
 const VIDEO_SLOTS: VideoSlot[] = [
   {
     id: 1,
-    title: "Client Success Story — Deepak",
-    hindiTitle: "ग्राहक सफलता की कहानी — दीपक",
-    description: "How name correction changed Deepak's career trajectory within 3 months.",
-    videoUrl: null,
-    posterUrl: null,
+    title: "Aditya Rao's Success Story",
+    hindiTitle: "आदित्य राव की सफलता की कहानी",
+    description:
+      "Discover how a personalised name correction helped Aditya Rao unlock new career opportunities and achieve remarkable professional growth.",
+    videoUrl: "/videos/adithya roa.mp4",
   },
   {
     id: 2,
-    title: "Celebrity Name Analysis",
-    hindiTitle: "सेलिब्रिटी नाम विश्लेषण",
-    description: "Breaking down the numerology behind famous Bollywood name changes.",
-    videoUrl: null,
-    posterUrl: null,
+    title: "Sneha Reddy's Journey",
+    hindiTitle: "स्नेहा रेड्डी की यात्रा",
+    description:
+      "See how numerology insights boosted Sneha Reddy's confidence, decision-making, and personal success.",
+    videoUrl: "/videos/snehah reddy.mp4",
   },
   {
     id: 3,
-    title: "How Numerology Works",
-    hindiTitle: "अंक ज्योतिष कैसे काम करता है",
-    description: "Understanding the Chaldean method and name vibration science.",
-    videoUrl: null,
-    posterUrl: null,
+    title: "Aeisha Mehra's Transformation",
+    hindiTitle: "ऐशा मेहरा का बदलाव",
+    description:
+      "Explore how a powerful name vibration helped Aeisha Mehra attract positivity, confidence, and new opportunities.",
+    videoUrl: "/videos/aeisha mehra.mp4",
   },
   {
     id: 4,
-    title: "Priya's Transformation",
-    hindiTitle: "प्रिया का बदलाव",
-    description: "From stuck in career to promotion in 60 days — Priya shares her journey.",
-    videoUrl: null,
-    posterUrl: null,
+    title: "Rajveer Agarwal's Business Growth",
+    hindiTitle: "राजवीर अग्रवाल की व्यापारिक सफलता",
+    description:
+      "Learn how Rajveer Agarwal experienced significant business growth and improved financial results after a name correction.",
+    videoUrl: "/videos/rajveerr agarwal.mp4",
   },
   {
     id: 5,
-    title: "Business Name Correction",
-    hindiTitle: "व्यापार नाम सुधार",
-    description: "How Amit increased business sales by 40% after a name spelling correction.",
-    videoUrl: null,
-    posterUrl: null,
+    title: "Preeya Kapoor's Success Story",
+    hindiTitle: "प्रीया कपूर की सफलता की कहानी",
+    description:
+      "Watch how Preeya Kapoor gained greater confidence, career recognition, and exciting new achievements through numerology.",
+    videoUrl: "/videos/preeya kapoor.mp4",
   },
 ];
 
 export default function VideoCarousel() {
   const [currentIndex, setCurrentIndex] = useState(0);
+  // Tracks which slot ids failed to load (file missing / not uploaded yet)
+  // so we can fall back to the placeholder instead of a broken player.
+  const [brokenIds, setBrokenIds] = useState<Set<number>>(new Set());
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const goToSlide = (index: number) => {
-    const clamped = ((index % VIDEO_SLOTS.length) + VIDEO_SLOTS.length) % VIDEO_SLOTS.length;
+    const clamped =
+      ((index % VIDEO_SLOTS.length) + VIDEO_SLOTS.length) % VIDEO_SLOTS.length;
     setCurrentIndex(clamped);
   };
 
   const goPrev = () => goToSlide(currentIndex - 1);
   const goNext = () => goToSlide(currentIndex + 1);
 
+  const markBroken = (id: number) =>
+    setBrokenIds((prev) => {
+      const next = new Set(prev);
+      next.add(id);
+      return next;
+    });
+
   const currentVideo = VIDEO_SLOTS[currentIndex];
+  const currentIsPlayable = currentVideo.videoUrl && !brokenIds.has(currentVideo.id);
 
   return (
     <section className="relative py-20 bg-diya-glow">
@@ -105,17 +122,18 @@ export default function VideoCarousel() {
         <div className="max-w-4xl mx-auto animate-fade-up">
           {/* Main video display */}
           <div className="card-premium rounded-2xl overflow-hidden glow-saffron">
-            <div className="relative aspect-video bg-secondary/30 flex items-center justify-center group">
-              {currentVideo.videoUrl ? (
+            <div className="relative bg-secondary/30 flex items-center justify-center group h-[70vh] max-h-[720px] min-h-[420px]">
+              {currentIsPlayable ? (
                 <video
                   key={currentVideo.id}
-                  src={currentVideo.videoUrl}
-                  poster={currentVideo.posterUrl || undefined}
+                  src={currentVideo.videoUrl!}
                   controls
-                  className="w-full h-full object-cover"
+                  preload="metadata"
+                  className="w-full h-full object-contain"
+                  onError={() => markBroken(currentVideo.id)}
                 />
               ) : (
-                /* Placeholder for video not yet uploaded */
+                /* Placeholder for video not yet uploaded (or that failed to load) */
                 <div className="flex flex-col items-center justify-center text-center p-8 space-y-4">
                   <div className="w-20 h-20 rounded-full bg-primary/15 flex items-center justify-center border-2 border-primary/30">
                     <Play className="w-8 h-8 text-primary ml-1" />
@@ -180,51 +198,61 @@ export default function VideoCarousel() {
 
           {/* Thumbnail strip / dots */}
           <div className="flex items-center justify-center gap-2 mt-6">
-            {VIDEO_SLOTS.map((slot, i) => (
-              <button
-                key={slot.id}
-                onClick={() => goToSlide(i)}
-                className={`group relative transition-all duration-200 ${
-                  i === currentIndex
-                    ? "w-16 h-16 md:w-20 md:h-20"
-                    : "w-10 h-10 md:w-12 md:h-12 opacity-60 hover:opacity-100"
-                }`}
-                aria-label={`Go to video ${i + 1}: ${slot.title}`}
-              >
-                <div
-                  className={`w-full h-full rounded-lg border-2 flex items-center justify-center overflow-hidden ${
+            {VIDEO_SLOTS.map((slot, i) => {
+              const isPlayable = slot.videoUrl && !brokenIds.has(slot.id);
+              return (
+                <button
+                  key={slot.id}
+                  onClick={() => goToSlide(i)}
+                  className={`group relative transition-all duration-200 ${
                     i === currentIndex
-                      ? "border-primary glow-saffron"
-                      : "border-border group-hover:border-primary/50"
+                      ? "w-16 h-16 md:w-20 md:h-20"
+                      : "w-10 h-10 md:w-12 md:h-12 opacity-60 hover:opacity-100"
                   }`}
-                  style={{
-                    background: i === currentIndex
-                      ? "linear-gradient(135deg, oklch(0.72 0.18 65 / 0.2), oklch(0.55 0.22 25 / 0.15))"
-                      : "oklch(0.18 0.03 270)",
-                  }}
+                  aria-label={`Go to video ${i + 1}: ${slot.title}`}
                 >
-                  {slot.videoUrl ? (
-                    <video
-                      src={slot.videoUrl}
-                      muted
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <Play className="w-4 h-4 text-primary opacity-70" />
-                  )}
-                </div>
-                {/* Number badge */}
-                <span
-                  className={`absolute -top-1 -right-1 w-5 h-5 rounded-full text-xs font-bold flex items-center justify-center ${
-                    i === currentIndex
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-secondary text-muted-foreground"
-                  }`}
-                >
-                  {i + 1}
-                </span>
-              </button>
-            ))}
+                  <div
+                    className={`w-full h-full rounded-lg border-2 flex items-center justify-center overflow-hidden ${
+                      i === currentIndex
+                        ? "border-primary glow-saffron"
+                        : "border-border group-hover:border-primary/50"
+                    }`}
+                    style={{
+                      background:
+                        i === currentIndex
+                          ? "linear-gradient(135deg, oklch(0.72 0.18 65 / 0.2), oklch(0.55 0.22 25 / 0.15))"
+                          : "oklch(0.18 0.03 270)",
+                    }}
+                  >
+                    {isPlayable ? (
+                      // preload="metadata" pulls just enough of the file to
+                      // paint the first frame — a free thumbnail with no
+                      // poster image and no extra bandwidth for a full download.
+                      <video
+                        src={slot.videoUrl!}
+                        muted
+                        playsInline
+                        preload="metadata"
+                        className="w-full h-full object-cover pointer-events-none"
+                        onError={() => markBroken(slot.id)}
+                      />
+                    ) : (
+                      <Play className="w-4 h-4 text-primary opacity-70" />
+                    )}
+                  </div>
+                  {/* Number badge */}
+                  <span
+                    className={`absolute -top-1 -right-1 w-5 h-5 rounded-full text-xs font-bold flex items-center justify-center ${
+                      i === currentIndex
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-secondary text-muted-foreground"
+                    }`}
+                  >
+                    {i + 1}
+                  </span>
+                </button>
+              );
+            })}
           </div>
 
           {/* CTA below carousel */}
