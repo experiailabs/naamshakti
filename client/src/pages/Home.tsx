@@ -66,7 +66,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://naamshaktiapi
 // `payment_session_id`; the frontend loads the Cashfree JS SDK and opens
 // Checkout with that session id. Set VITE_CASHFREE_MODE to "production"
 // when going live -- defaults to "sandbox" for safety.
-const CASHFREE_MODE = (import.meta.env.VITE_CASHFREE_MODE as "sandbox" | "production") || "sandbox";
+const CASHFREE_MODE = (import.meta.env.VITE_CASHFREE_MODE as "sandbox" | "production") || "production";
 const CASHFREE_SDK_URL = "https://sdk.cashfree.com/js/v3/cashfree.js";
 
 // Lazily loads the Cashfree JS SDK once and resolves with the global
