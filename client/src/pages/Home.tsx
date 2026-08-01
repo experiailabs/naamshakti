@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,6 +34,8 @@ import {
   IndianRupee,
   Flame,
   Target,
+  Loader2,
+  MessageCircle,
 } from "lucide-react";
 import LifePathCalculator from "@/components/LifePathCalculator";
 import VideoCarousel from "@/components/VideoCarousel";
@@ -51,6 +52,59 @@ const LOGO = "/images/logo_3c9d214b.webp";
 const REPORT_MOCKUP = "/images/report-mockup_c52d9b33.png";
 const CELEBRITY_SECTION = "/images/celebrity-section_5908310b.png";
 const GURU_PORTRAIT = "/images/guru-portrait_6e0e8c98.png";
+
+// ============================================================
+// BACKEND / PAYMENT CONFIG
+// ============================================================
+// Base URL of the FastAPI backend.
+// Set VITE_API_BASE_URL in your .env / build environment; falls back to
+// the known production API domain if not set.
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://naamshaktiapi.krishuai.com";
+
+// NOTE: Payment flow uses the Cashfree ORDER API (Payment Links is not
+// approved on this account). The backend creates an order and returns
+// `payment_session_id`; the frontend loads the Cashfree JS SDK and opens
+// Checkout with that session id. Set VITE_CASHFREE_MODE to "production"
+// when going live -- defaults to "sandbox" for safety.
+const CASHFREE_MODE = (import.meta.env.VITE_CASHFREE_MODE as "sandbox" | "production") || "sandbox";
+const CASHFREE_SDK_URL = "https://sdk.cashfree.com/js/v3/cashfree.js";
+
+// Lazily loads the Cashfree JS SDK once and resolves with the global
+// `Cashfree` constructor. Safe to call multiple times -- subsequent calls
+// reuse the same in-flight/resolved promise.
+let cashfreeSdkPromise: Promise<any> | null = null;
+function loadCashfreeSdk(): Promise<any> {
+  if (typeof window === "undefined") {
+    return Promise.reject(new Error("Cashfree SDK can only load in the browser."));
+  }
+  if ((window as any).Cashfree) {
+    return Promise.resolve((window as any).Cashfree);
+  }
+  if (cashfreeSdkPromise) {
+    return cashfreeSdkPromise;
+  }
+  cashfreeSdkPromise = new Promise((resolve, reject) => {
+    const existing = document.querySelector(`script[src="${CASHFREE_SDK_URL}"]`);
+    if (existing) {
+      existing.addEventListener("load", () => resolve((window as any).Cashfree));
+      existing.addEventListener("error", () => reject(new Error("Failed to load Cashfree SDK.")));
+      return;
+    }
+    const script = document.createElement("script");
+    script.src = CASHFREE_SDK_URL;
+    script.async = true;
+    script.onload = () => resolve((window as any).Cashfree);
+    script.onerror = () => reject(new Error("Failed to load Cashfree SDK."));
+    document.head.appendChild(script);
+  });
+  return cashfreeSdkPromise;
+}
+
+// Support contact — replace with your real number. Kept in one place so
+// it's easy to update everywhere it's shown (footer, contact section).
+const SUPPORT_PHONE_DISPLAY = "+91 98765 43210"; // TODO: replace with real number
+const SUPPORT_PHONE_E164 = "919876543210"; // TODO: replace with real number, no + or spaces (for wa.me / tel: links)
+const SUPPORT_EMAIL = "support@naamshakti.in";
 
 // Countdown target: August 15, 2026
 const OFFER_DEADLINE = new Date("2026-08-15T23:59:59+05:30").getTime();
@@ -125,6 +179,13 @@ function Header() {
           </div>
         </div>
         <div className="hidden md:flex items-center gap-6">
+          <a
+            href={`tel:+${SUPPORT_PHONE_E164}`}
+            className="text-sm text-muted-foreground hover:text-primary transition-colors flex items-center gap-1.5"
+          >
+            <Phone className="w-4 h-4" />
+            {SUPPORT_PHONE_DISPLAY}
+          </a>
           <span className="text-sm text-muted-foreground flex items-center gap-1.5">
             <Star className="w-4 h-4 fill-primary text-primary" />
             4.9/5 · 50,000+ Reports
@@ -374,7 +435,6 @@ function CelebrityStories() {
 function WhatsInside() {
   const features = [
     {
-      // Mystical: Sacred letter/OM vibration symbol
       icon: (
         <svg viewBox="0 0 48 48" className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
           <circle cx="24" cy="24" r="20" opacity="0.3" />
@@ -390,7 +450,6 @@ function WhatsInside() {
       desc: "Decode the hidden power and vibration of every letter in your name.",
     },
     {
-      // Mystical: Yantra / sacred geometry star for perfect spelling
       icon: (
         <svg viewBox="0 0 48 48" className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
           <path d="M24 6 L42 38 L6 38 Z" opacity="0.4" />
@@ -405,7 +464,6 @@ function WhatsInside() {
       desc: "Discover numbers that enhance your fortune and open new opportunities.",
     },
     {
-      // Mystical: Lo Shu 3x3 magic grid
       icon: (
         <svg viewBox="0 0 48 48" className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
           <rect x="8" y="8" width="32" height="32" rx="2" opacity="0.4" />
@@ -722,7 +780,8 @@ function OfferForm() {
     phone: "",
     objective: "",
   });
-  const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [emailTouched, setEmailTouched] = useState(false);
   const [emailShake, setEmailShake] = useState(false);
 
@@ -798,19 +857,97 @@ function OfferForm() {
     setTimeout(() => setEmailShake(false), 400);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Strip everything except digits, cap at 10 (the part after +91).
+  const handlePhoneChange = (raw: string) => {
+    const digitsOnly = raw.replace(/\D/g, "").slice(0, 10);
+    setFormData({ ...formData, phone: digitsOnly });
+  };
+
+  const isPhoneValid = /^[6-9]\d{9}$/.test(formData.phone);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSubmitError(null);
+
     if (
-      formData.fullName &&
-      formData.dob &&
-      formData.email &&
-      formData.phone &&
-      formData.objective &&
-      emailValidation.status === "valid"
+      !formData.fullName ||
+      !formData.dob ||
+      !formData.email ||
+      !formData.phone ||
+      !formData.objective ||
+      emailValidation.status !== "valid"
     ) {
-      setSubmitted(true);
-    } else if (emailValidation.status !== "valid") {
-      triggerEmailShake();
+      if (emailValidation.status !== "valid") triggerEmailShake();
+      if (!isPhoneValid) setSubmitError("Please enter a valid 10-digit mobile number.");
+      return;
+    }
+    if (!isPhoneValid) {
+      setSubmitError("Please enter a valid 10-digit mobile number.");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      // Single backend call: creates the customer AND (if not a referral
+      // customer) creates a Cashfree ORDER server-side, returning
+      // `payment_session_id`. This avoids exposing the admin X-API-Key in
+      // frontend code, which POST /customers/ + POST /payments/create-order
+      // would otherwise require.
+      const params = new URLSearchParams(window.location.search);
+      const ref = params.get("ref") || "";
+
+      const res = await fetch(`${API_BASE_URL}/public/checkout`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: formData.fullName,
+          dob: formData.dob,
+          email: formData.email,
+          phone: `+91${formData.phone}`,
+          objective: formData.objective,
+          ref,
+        }),
+      });
+
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({}));
+        throw new Error(errBody.detail || `Request failed (${res.status})`);
+      }
+
+      const data = await res.json();
+
+      if (data.has_referral) {
+        // Referral customers skip payment entirely -- report is generated
+        // via the backend cron job. Just confirm to the user.
+        setSubmitError(null);
+        setSubmitting(false);
+        alert("You're all set! Since you used a referral code, no payment is needed — your report will be emailed to you soon.");
+        return;
+      }
+
+      if (!data.payment_session_id) {
+        throw new Error("Payment session could not be created. Please try again.");
+      }
+
+      // Load the Cashfree JS SDK (cached after first load) and open
+      // Checkout using the session id from our backend. Cashfree handles
+      // its own return_url redirect after the payment attempt (configured
+      // server-side in cashfree_utils.create_order).
+      const Cashfree = await loadCashfreeSdk();
+      const cashfree = Cashfree({ mode: CASHFREE_MODE });
+
+      await cashfree.checkout({
+        paymentSessionId: data.payment_session_id,
+        redirectTarget: "_self",
+      });
+      // On "_self", Cashfree navigates the whole page away to its checkout
+      // page and back to return_url afterwards, so nothing further to do
+      // here. If you switch redirectTarget to "_modal" instead, handle the
+      // result object it resolves with (result.error / result.paymentDetails)
+      // to update the UI without a full navigation.
+    } catch (err: any) {
+      setSubmitError(err?.message || "Something went wrong. Please try again or contact support.");
+      setSubmitting(false);
     }
   };
 
@@ -894,217 +1031,246 @@ function OfferForm() {
                       Report Delivered Within 24 Hours
                     </div>
                   </div>
+
+                  {/* Contact / help */}
+                  <div className="pt-4 border-t border-border">
+                    <p className="text-xs text-muted-foreground mb-2">Need help or have a question?</p>
+                    <div className="flex flex-col gap-1.5">
+                      <a
+                        href={`https://wa.me/${SUPPORT_PHONE_E164}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 text-sm text-primary hover:text-gold-foil transition-colors"
+                      >
+                        <MessageCircle className="w-4 h-4" />
+                        WhatsApp us — {SUPPORT_PHONE_DISPLAY}
+                      </a>
+                      <a
+                        href={`mailto:${SUPPORT_EMAIL}`}
+                        className="flex items-center gap-2 text-sm text-primary hover:text-gold-foil transition-colors"
+                      >
+                        <Mail className="w-4 h-4" />
+                        {SUPPORT_EMAIL}
+                      </a>
+                    </div>
+                  </div>
                 </div>
               </div>
 
               {/* Right: Form */}
               <div className="lg:col-span-3 p-8">
-                {!submitted ? (
-                  <form onSubmit={handleSubmit} className="space-y-5">
-                    <div>
-                      <h4 className="font-display font-bold text-xl text-foreground mb-1">
-                        Enter Your Details
-                      </h4>
-                      <p className="text-sm text-muted-foreground">
-                        अपनी जानकारी भरें और रिपोर्ट पाएं
-                      </p>
-                    </div>
+                <form onSubmit={handleSubmit} className="space-y-5">
+                  <div>
+                    <h4 className="font-display font-bold text-xl text-foreground mb-1">
+                      Enter Your Details
+                    </h4>
+                    <p className="text-sm text-muted-foreground">
+                      अपनी जानकारी भरें और रिपोर्ट पाएं
+                    </p>
+                  </div>
 
+                  <div className="space-y-2">
+                    <Label htmlFor="fullName" className="text-foreground flex items-center gap-2">
+                      <User className="w-4 h-4 text-primary" />
+                      Full Name <span className="font-hindi text-primary/60">(पूरा नाम)</span>
+                    </Label>
+                    <Input
+                      id="fullName"
+                      type="text"
+                      required
+                      placeholder="Enter your full name"
+                      value={formData.fullName}
+                      onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                      className="bg-input border-border focus:border-primary focus:ring-primary/30 text-foreground"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="dob" className="text-foreground flex items-center gap-2">
+                      <Calendar className="w-4 h-4 text-primary" />
+                      Date of Birth <span className="font-hindi text-primary/60">(जन्म तिथि)</span>
+                    </Label>
+                    <Input
+                      id="dob"
+                      type="date"
+                      required
+                      value={formData.dob}
+                      onChange={(e) => setFormData({ ...formData, dob: e.target.value })}
+                      className="bg-input border-border focus:border-primary focus:ring-primary/30 text-foreground"
+                    />
+                  </div>
+
+                  {/* Target Objective Dropdown */}
+                  <div className="space-y-2">
+                    <Label className="text-foreground flex items-center gap-2">
+                      <Target className="w-4 h-4 text-primary" />
+                      Target Objective <span className="font-hindi text-primary/60">(आपका उद्देश्य)</span>
+                    </Label>
+                    <Select
+                      value={formData.objective}
+                      onValueChange={(value) => setFormData({ ...formData, objective: value })}
+                    >
+                      <SelectTrigger className="bg-input border-border focus:border-primary focus:ring-primary/30 text-foreground py-3">
+                        <SelectValue placeholder="What do you want to align your name for?" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="career">Career Growth & Promotion — करियर वृद्धि</SelectItem>
+                        <SelectItem value="wealth">Wealth & Money — धन और संपत्ति</SelectItem>
+                        <SelectItem value="love">Love & Relationships — प्रेम और रिश्ते</SelectItem>
+                        <SelectItem value="business">Business Success — व्यापार सफलता</SelectItem>
+                        <SelectItem value="health">Health & Wellbeing — स्वास्थ्य</SelectItem>
+                        <SelectItem value="education">Education & Studies — शिक्षा</SelectItem>
+                        <SelectItem value="confidence">Personal Power & Confidence — आत्मविश्वास</SelectItem>
+                        <SelectItem value="marriage">Marriage & Family — विवाह और परिवार</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="grid sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="fullName" className="text-foreground flex items-center gap-2">
-                        <User className="w-4 h-4 text-primary" />
-                        Full Name <span className="font-hindi text-primary/60">(पूरा नाम)</span>
+                      <Label htmlFor="email" className="text-foreground flex items-center gap-2">
+                        <Mail className="w-4 h-4 text-primary" />
+                        Email <span className="font-hindi text-primary/60">(ईमेल)</span>
                       </Label>
                       <Input
-                        id="fullName"
-                        type="text"
+                        id="email"
+                        type="email"
                         required
-                        placeholder="Enter your full name"
-                        value={formData.fullName}
-                        onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                        className="bg-input border-border focus:border-primary focus:ring-primary/30 text-foreground"
+                        placeholder="your@email.com"
+                        value={formData.email}
+                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                        onBlur={() => setEmailTouched(true)}
+                        className={`bg-input border-border focus:ring-primary/30 text-foreground transition-colors ${
+                          emailShake ? "animate-shake" : ""
+                        } ${
+                          showEmailFeedback && emailValidation.status === "valid"
+                            ? "border-green-500/60 focus:border-green-500"
+                            : showEmailFeedback && (emailValidation.status === "invalid" || emailValidation.status === "typo")
+                              ? "border-destructive/60 focus:border-destructive"
+                              : "focus:border-primary"
+                        }`}
                       />
+                      {/* Real-time email validation feedback */}
+                      {showEmailFeedback && emailValidation.status === "valid" && (
+                        <div className="flex items-center gap-1.5 text-xs text-green-500 animate-fade-up">
+                          <CheckIcon className="w-3.5 h-3.5" />
+                          <span>{emailValidation.message}</span>
+                        </div>
+                      )}
+                      {showEmailFeedback && emailValidation.status === "invalid" && (
+                        <div className="flex items-center gap-1.5 text-xs text-destructive animate-fade-up">
+                          <AlertCircle className="w-3.5 h-3.5" />
+                          <span>{emailValidation.message}</span>
+                        </div>
+                      )}
+                      {showEmailFeedback && emailValidation.status === "typo" && emailValidation.suggestion && (
+                        <div className="flex items-center gap-1.5 text-xs text-destructive animate-fade-up flex-wrap">
+                          <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                          <span>{emailValidation.message}</span>
+                          <button
+                            type="button"
+                            onClick={() => setFormData({ ...formData, email: emailValidation.suggestion! })}
+                            className="text-primary font-medium underline hover:text-primary/80 transition-colors"
+                          >
+                            Use this
+                          </button>
+                        </div>
+                      )}
+                      {showEmailFeedback && emailValidation.status === "typo" && (
+                        <p className="text-xs text-muted-foreground">
+                          <Info className="w-3 h-3 inline mr-1" />
+                          Your report will be delivered to this email — please double-check for typos.
+                        </p>
+                      )}
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="dob" className="text-foreground flex items-center gap-2">
-                        <Calendar className="w-4 h-4 text-primary" />
-                        Date of Birth <span className="font-hindi text-primary/60">(जन्म तिथि)</span>
+                      <Label htmlFor="phone" className="text-foreground flex items-center gap-2">
+                        <Phone className="w-4 h-4 text-primary" />
+                        Phone Number <span className="font-hindi text-primary/60">(फ़ोन नंबर)</span>
                       </Label>
-                      <Input
-                        id="dob"
-                        type="date"
-                        required
-                        value={formData.dob}
-                        onChange={(e) => setFormData({ ...formData, dob: e.target.value })}
-                        className="bg-input border-border focus:border-primary focus:ring-primary/30 text-foreground"
-                      />
-                    </div>
-
-                    {/* Target Objective Dropdown */}
-                    <div className="space-y-2">
-                      <Label className="text-foreground flex items-center gap-2">
-                        <Target className="w-4 h-4 text-primary" />
-                        Target Objective <span className="font-hindi text-primary/60">(आपका उद्देश्य)</span>
-                      </Label>
-                      <Select
-                        value={formData.objective}
-                        onValueChange={(value) => setFormData({ ...formData, objective: value })}
-                      >
-                        <SelectTrigger className="bg-input border-border focus:border-primary focus:ring-primary/30 text-foreground py-3">
-                          <SelectValue placeholder="What do you want to align your name for?" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="career">Career Growth & Promotion — करियर वृद्धि</SelectItem>
-                          <SelectItem value="wealth">Wealth & Money — धन और संपत्ति</SelectItem>
-                          <SelectItem value="love">Love & Relationships — प्रेम और रिश्ते</SelectItem>
-                          <SelectItem value="business">Business Success — व्यापार सफलता</SelectItem>
-                          <SelectItem value="health">Health & Wellbeing — स्वास्थ्य</SelectItem>
-                          <SelectItem value="education">Education & Studies — शिक्षा</SelectItem>
-                          <SelectItem value="confidence">Personal Power & Confidence — आत्मविश्वास</SelectItem>
-                          <SelectItem value="marriage">Marriage & Family — विवाह और परिवार</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="grid sm:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="email" className="text-foreground flex items-center gap-2">
-                          <Mail className="w-4 h-4 text-primary" />
-                          Email <span className="font-hindi text-primary/60">(ईमेल)</span>
-                        </Label>
-                        <Input
-                          id="email"
-                          type="email"
-                          required
-                          placeholder="your@email.com"
-                          value={formData.email}
-                          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                          onBlur={() => setEmailTouched(true)}
-                          className={`bg-input border-border focus:ring-primary/30 text-foreground transition-colors ${
-                            emailShake ? "animate-shake" : ""
-                          } ${
-                            showEmailFeedback && emailValidation.status === "valid"
-                              ? "border-green-500/60 focus:border-green-500"
-                              : showEmailFeedback && (emailValidation.status === "invalid" || emailValidation.status === "typo")
-                                ? "border-destructive/60 focus:border-destructive"
-                                : "focus:border-primary"
-                          }`}
-                        />
-                        {/* Real-time email validation feedback */}
-                        {showEmailFeedback && emailValidation.status === "valid" && (
-                          <div className="flex items-center gap-1.5 text-xs text-green-500 animate-fade-up">
-                            <CheckIcon className="w-3.5 h-3.5" />
-                            <span>{emailValidation.message}</span>
-                          </div>
-                        )}
-                        {showEmailFeedback && emailValidation.status === "invalid" && (
-                          <div className="flex items-center gap-1.5 text-xs text-destructive animate-fade-up">
-                            <AlertCircle className="w-3.5 h-3.5" />
-                            <span>{emailValidation.message}</span>
-                          </div>
-                        )}
-                        {showEmailFeedback && emailValidation.status === "typo" && emailValidation.suggestion && (
-                          <div className="flex items-center gap-1.5 text-xs text-destructive animate-fade-up flex-wrap">
-                            <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                            <span>{emailValidation.message}</span>
-                            <button
-                              type="button"
-                              onClick={() => setFormData({ ...formData, email: emailValidation.suggestion! })}
-                              className="text-primary font-medium underline hover:text-primary/80 transition-colors"
-                            >
-                              Use this
-                            </button>
-                          </div>
-                        )}
-                        {showEmailFeedback && emailValidation.status === "typo" && (
-                          <p className="text-xs text-muted-foreground">
-                            <Info className="w-3 h-3 inline mr-1" />
-                            Your report will be delivered to this email — please double-check for typos.
-                          </p>
-                        )}
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="phone" className="text-foreground flex items-center gap-2">
-                          <Phone className="w-4 h-4 text-primary" />
-                          Phone Number <span className="font-hindi text-primary/60">(फ़ोन नंबर)</span>
-                        </Label>
+                      <div className="flex">
+                        <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-border bg-secondary/50 text-sm text-foreground/80">
+                          +91
+                        </span>
                         <Input
                           id="phone"
                           type="tel"
+                          inputMode="numeric"
                           required
-                          placeholder="Your 10-digit phone number"
+                          placeholder="98765 43210"
                           value={formData.phone}
-                          onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                          className="bg-input border-border focus:border-primary focus:ring-primary/30 text-foreground"
+                          onChange={(e) => handlePhoneChange(e.target.value)}
+                          className="bg-input border-border focus:border-primary focus:ring-primary/30 text-foreground rounded-l-none"
                         />
                       </div>
+                      {formData.phone.length > 0 && !isPhoneValid && (
+                        <div className="flex items-center gap-1.5 text-xs text-destructive animate-fade-up">
+                          <AlertCircle className="w-3.5 h-3.5" />
+                          <span>Enter a valid 10-digit Indian mobile number</span>
+                        </div>
+                      )}
                     </div>
+                  </div>
 
-                    {/* Dynamic personalized message based on selected objective */}
-                    {formData.objective && (
-                      <div
-                        key={formData.objective}
-                        className="rounded-xl p-4 border border-primary/30 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent animate-fade-up"
-                      >
-                        <div className="flex items-start gap-3">
-                          <div className="w-9 h-9 rounded-full bg-primary/20 flex items-center justify-center shrink-0 mt-0.5">
-                            <Sparkles className="w-4 h-4 text-primary" />
-                          </div>
-                          <div className="space-y-1">
-                            <p className="text-sm font-semibold text-primary">
-                              {OBJECTIVE_MESSAGES[formData.objective]?.title}
-                            </p>
-                            <p className="font-hindi text-xs text-primary/70">
-                              {OBJECTIVE_MESSAGES[formData.objective]?.hindi}
-                            </p>
-                            <p className="text-sm text-foreground/80 leading-relaxed">
-                              {OBJECTIVE_MESSAGES[formData.objective]?.desc}
-                            </p>
-                          </div>
+                  {/* Dynamic personalized message based on selected objective */}
+                  {formData.objective && (
+                    <div
+                      key={formData.objective}
+                      className="rounded-xl p-4 border border-primary/30 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent animate-fade-up"
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className="w-9 h-9 rounded-full bg-primary/20 flex items-center justify-center shrink-0 mt-0.5">
+                          <Sparkles className="w-4 h-4 text-primary" />
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-sm font-semibold text-primary">
+                            {OBJECTIVE_MESSAGES[formData.objective]?.title}
+                          </p>
+                          <p className="font-hindi text-xs text-primary/70">
+                            {OBJECTIVE_MESSAGES[formData.objective]?.hindi}
+                          </p>
+                          <p className="text-sm text-foreground/80 leading-relaxed">
+                            {OBJECTIVE_MESSAGES[formData.objective]?.desc}
+                          </p>
                         </div>
                       </div>
-                    )}
-
-                    {/* Submit button */}
-                    <Button
-                      type="submit"
-                      size="lg"
-                      className="w-full bg-primary text-primary-foreground hover:bg-primary/90 text-lg font-bold py-6 glow-saffron-strong transition-transform active:scale-95"
-                    >
-                      <IndianRupee className="w-5 h-5 mr-1" />
-                      Pay ₹299 & Get My Report
-                      <ArrowRight className="w-5 h-5 ml-2" />
-                    </Button>
-
-                    <p className="text-xs text-center text-muted-foreground">
-                      🔒 Your information is 100% private and secure. Report delivered to your email
-                      within 24 hours.
-                    </p>
-                  </form>
-                ) : (
-                  <div className="flex flex-col items-center justify-center text-center py-12 space-y-4">
-                    <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center">
-                      <CheckCircle2 className="w-8 h-8 text-primary" />
                     </div>
-                    <h4 className="font-display font-bold text-2xl text-gold-foil">
-                      धन्यवाद! Thank You!
-                    </h4>
-                    <p className="text-muted-foreground max-w-sm">
-                      Your details have been received. Proceed to payment to unlock your personalized
-                      NaamShakti Numerology Report.
-                    </p>
-                    <Button
-                      size="lg"
-                      className="bg-primary text-primary-foreground hover:bg-primary/90 text-lg font-bold py-6 px-8 glow-saffron-strong"
-                      onClick={() => alert("Payment integration will be activated here.")}
-                    >
-                      <Lock className="w-5 h-5 mr-2" />
-                      Proceed to Payment — ₹299
-                    </Button>
-                  </div>
-                )}
+                  )}
+
+                  {submitError && (
+                    <div className="flex items-start gap-2 text-sm text-destructive bg-destructive/10 border border-destructive/30 rounded-lg p-3 animate-fade-up">
+                      <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                      <span>{submitError}</span>
+                    </div>
+                  )}
+
+                  {/* Submit button */}
+                  <Button
+                    type="submit"
+                    size="lg"
+                    disabled={submitting}
+                    className="w-full bg-primary text-primary-foreground hover:bg-primary/90 text-lg font-bold py-6 glow-saffron-strong transition-transform active:scale-95 disabled:opacity-70 disabled:active:scale-100"
+                  >
+                    {submitting ? (
+                      <>
+                        <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                        Opening secure payment…
+                      </>
+                    ) : (
+                      <>
+                        <IndianRupee className="w-5 h-5 mr-1" />
+                        Pay ₹299 & Get My Report
+                        <ArrowRight className="w-5 h-5 ml-2" />
+                      </>
+                    )}
+                  </Button>
+
+                  <p className="text-xs text-center text-muted-foreground">
+                    🔒 Your information is 100% private and secure. Report delivered to your email
+                    within 24 hours. Payments secured by Cashfree.
+                  </p>
+                </form>
               </div>
             </div>
           </div>
@@ -1223,7 +1389,7 @@ function FAQ() {
     {
       q: "What if I don't receive my report?",
       qHindi: "अगर मुझे रिपोर्ट नहीं मिले तो?",
-      a: "You can email us at support@naamshakti.in. Our team will ensure your report is delivered promptly.",
+      a: `You can email us at ${SUPPORT_EMAIL} or WhatsApp us at ${SUPPORT_PHONE_DISPLAY}. Our team will ensure your report is delivered promptly.`,
     },
   ];
 
@@ -1370,9 +1536,27 @@ function Footer() {
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li className="flex items-center gap-2">
                 <Mail className="w-4 h-4 text-primary" />
-                support@naamshakti.in
+                <a href={`mailto:${SUPPORT_EMAIL}`} className="hover:text-primary transition-colors">
+                  {SUPPORT_EMAIL}
+                </a>
               </li>
-
+              <li className="flex items-center gap-2">
+                <Phone className="w-4 h-4 text-primary" />
+                <a href={`tel:+${SUPPORT_PHONE_E164}`} className="hover:text-primary transition-colors">
+                  {SUPPORT_PHONE_DISPLAY}
+                </a>
+              </li>
+              <li className="flex items-center gap-2">
+                <MessageCircle className="w-4 h-4 text-primary" />
+                <a
+                  href={`https://wa.me/${SUPPORT_PHONE_E164}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-primary transition-colors"
+                >
+                  WhatsApp Support
+                </a>
+              </li>
             </ul>
             <div className="flex items-center gap-2 mt-4">
               <div className="flex">
