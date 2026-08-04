@@ -357,7 +357,7 @@ export default function LifePathCalculator() {
                     className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-bold py-5 glow-saffron transition-transform active:scale-95"
                   >
                     <a href="#offer">
-                      Get My Full Report — ₹299
+                      Get My Full Report — ₹399
                       <ArrowRight className="w-4 h-4 ml-2" />
                     </a>
                   </Button>
