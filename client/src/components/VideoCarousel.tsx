@@ -263,7 +263,7 @@ export default function VideoCarousel() {
               className="bg-primary text-primary-foreground hover:bg-primary/90 font-bold px-8 py-5 glow-saffron transition-transform active:scale-95"
             >
               <a href="#offer">
-                अपनी कहानी बनाएं — Start Your Transformation ₹299
+                अपनी कहानी बनाएं — Start Your Transformation ₹399
                 <ChevronRight className="w-5 h-5 ml-1" />
               </a>
             </Button>
