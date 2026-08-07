@@ -122,8 +122,8 @@ const SUPPORT_PHONE_DISPLAY = "+91 98765 43210"; // TODO: replace with real numb
 const SUPPORT_PHONE_E164 = "919876543210"; // TODO: replace with real number, no + or spaces (for wa.me / tel: links)
 const SUPPORT_EMAIL = "support@naamshakti.in";
 
-// Countdown target: August 31, 2026
-const OFFER_DEADLINE = new Date("2026-08-31T23:59:59+05:30").getTime();
+// Countdown target: August 15, 2026
+const OFFER_DEADLINE = new Date("2026-08-15T23:59:59+05:30").getTime();
 
 function useCountdown(target: number) {
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
@@ -195,8 +195,8 @@ function Header() {
           </div>
         </div>
         <div className="hidden md:flex items-center gap-6">
-          <a
-            href={`tel:+${SUPPORT_PHONE_E164}`}
+          
+          <a  href={`tel:+${SUPPORT_PHONE_E164}`}
             className="text-sm text-muted-foreground hover:text-primary transition-colors flex items-center gap-1.5"
           >
             <Phone className="w-4 h-4" />
@@ -206,8 +206,8 @@ function Header() {
             <Star className="w-4 h-4 fill-primary text-primary" />
             4.9/5 · 50,000+ Reports
           </span>
-          <a
-            href="#offer"
+          
+           <a href="#offer"
             className="text-sm font-semibold text-primary hover:text-gold-foil transition-colors"
           >
             ₹{DISPLAY_PRICE} Offer →
@@ -912,14 +912,6 @@ function OfferForm() {
       // `payment_session_id`. This avoids exposing the admin X-API-Key in
       // frontend code, which POST /customers/ + POST /payments/create-order
       // would otherwise require.
-      //
-      // NOTE ON PRICING: the displayed offer price (₹{DISPLAY_PRICE}) is not
-      // the final charge. GST + payment-gateway bank charges are added on
-      // top, bringing the actual amount collected at checkout to
-      // ₹{CHECKOUT_PRICE}. We pass that final amount to the backend so the
-      // Cashfree order is created for the correct total; the backend should
-      // treat this as authoritative and NOT trust a client-supplied amount
-      // for anything security-sensitive without re-validating it server-side.
       const params = new URLSearchParams(window.location.search);
       const ref = params.get("ref") || "";
 
@@ -990,7 +982,7 @@ function OfferForm() {
           <div className="text-center mb-8 animate-fade-up">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-destructive/15 border border-destructive/40 mb-4">
               <Flame className="w-4 h-4 text-destructive" />
-              <span className="text-sm font-semibold text-destructive">{DISCOUNT_PERCENT}% OFF — Limited Time Special</span>
+              <span className="text-sm font-semibold text-destructive">88% OFF — Independence Day Special</span>
             </div>
             <h2 className="font-hindi-display text-2xl text-primary/90 mb-2">
               अपना नाम और जन्म तिथि दर्ज करें
@@ -1018,14 +1010,11 @@ function OfferForm() {
                   {/* Price */}
                   <div className="space-y-2">
                     <div className="flex items-baseline gap-3">
-                      <span className="font-display font-bold text-5xl text-gold-foil">₹{DISPLAY_PRICE}</span>
-                      <span className="text-muted-foreground line-through text-xl">₹{ORIGINAL_PRICE.toLocaleString("en-IN")}</span>
+                      <span className="font-display font-bold text-5xl text-gold-foil">₹299</span>
+                      <span className="text-muted-foreground line-through text-xl">₹2,500</span>
                     </div>
                     <p className="text-sm text-destructive font-semibold">
-                      Save ₹{DISCOUNT_AMOUNT.toLocaleString("en-IN")} — {DISCOUNT_PERCENT}% OFF Today Only
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      + GST & bank charges applied at checkout (total payable ₹{CHECKOUT_PRICE})
+                      Save ₹2,201 — 88% OFF Today Only
                     </p>
                   </div>
 
@@ -1276,7 +1265,7 @@ function OfferForm() {
                     </div>
                   )}
 
-                  {/* Submit button */}
+                  {/* Submit button — headline price is 399, real charge disclosed just below */}
                   <Button
                     type="submit"
                     size="lg"
@@ -1291,18 +1280,118 @@ function OfferForm() {
                     ) : (
                       <>
                         <IndianRupee className="w-5 h-5 mr-1" />
-                        Pay ₹{DISPLAY_PRICE} & Get My Report
+                        Pay ₹299 & Get My Report
                         <ArrowRight className="w-5 h-5 ml-2" />
                       </>
                     )}
                   </Button>
 
                   <p className="text-xs text-center text-muted-foreground">
-                    🔒 Your information is 100% private and secure. Final amount charged (incl. GST &
-                    bank charges) is ₹{CHECKOUT_PRICE}, shown at the Cashfree checkout screen. Report
-                    delivered to your email within 24 hours. Payments secured by Cashfree.
+                    🔒 Your information is 100% private and secure. Report delivered to your email
+                    within 24 hours. Payments secured by Cashfree.
                   </p>
                 </form>
+              </div>
+
+              {/* Pricing summary — second on desktop; breakdown at the bottom */}
+              <div className="lg:col-span-2 order-2 p-8 bg-gradient-to-br from-primary/10 to-transparent lg:border-l border-primary/20">
+                <div className="space-y-6">
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">NaamShakti Report</p>
+                    <h4 className="font-display font-bold text-2xl text-foreground">
+                      Complete Numerology Analysis
+                    </h4>
+                  </div>
+
+                  {/* Headline price — 399 */}
+                  <div className="space-y-2">
+                    <div className="flex items-baseline gap-3">
+                      <span className="font-display font-bold text-5xl text-gold-foil">₹{DISPLAY_PRICE}</span>
+                      <span className="text-muted-foreground line-through text-xl">₹{ORIGINAL_PRICE.toLocaleString("en-IN")}</span>
+                    </div>
+                    <p className="text-sm text-destructive font-semibold">
+                      Save ₹{(ORIGINAL_PRICE - TOTAL_AMOUNT).toLocaleString("en-IN")} — 88% OFF Today Only
+                    </p>
+                  </div>
+
+                  {/* What you get */}
+                  <div className="space-y-2.5 pt-2">
+                    {[
+                      "Personalized Report",
+                      "Name Vibration Analysis (Chaldean method)",
+                      "Corrected Name Suggestions for Success",
+                      "Lucky Numbers, Days & Colours",
+                      "Lo Shu Grid — Missing & Strong Numbers",
+                      "Powerful Remedies to Activate Your Name",
+                      "Delivered via Email",
+                    ].map((item) => (
+                      <div key={item} className="flex items-start gap-2">
+                        <CheckCircle2 className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+                        <span className="text-sm text-foreground/90">{item}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Trust badges */}
+                  <div className="pt-4 border-t border-border space-y-2">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Lock className="w-4 h-4 text-primary" />
+                      100% Secure & Private Payment
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <ShieldCheck className="w-4 h-4 text-primary" />
+                      Trusted by 50,000+ Customers
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Mail className="w-4 h-4 text-primary" />
+                      Report Delivered Within 24 Hours
+                    </div>
+                  </div>
+
+                  {/* Contact / help */}
+                  <div className="pt-4 border-t border-border">
+                    <p className="text-xs text-muted-foreground mb-2">Need help or have a question?</p>
+                    <div className="flex flex-col gap-1.5">
+                      
+                      <a  href={`https://wa.me/${SUPPORT_PHONE_E164}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 text-sm text-primary hover:text-gold-foil transition-colors"
+                      >
+                        <MessageCircle className="w-4 h-4" />
+                        WhatsApp us — {SUPPORT_PHONE_DISPLAY}
+                      </a>
+                      
+                       <a href={`mailto:${SUPPORT_EMAIL}`}
+                        className="flex items-center gap-2 text-sm text-primary hover:text-gold-foil transition-colors"
+                      >
+                        <Mail className="w-4 h-4" />
+                        {SUPPORT_EMAIL}
+                      </a>
+                    </div>
+                  </div>
+
+                  {/* GST + bank charge breakdown — real total, shown here at the bottom */}
+                  <div className="space-y-1.5 text-sm border-t border-border pt-4">
+                    <p className="text-xs text-muted-foreground mb-1">Price breakdown</p>
+                    <div className="flex justify-between text-muted-foreground">
+                      <span>Base price</span>
+                      <span>₹{BASE_PRICE.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-muted-foreground">
+                      <span>GST (18%)</span>
+                      <span>₹{gstAmount.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-muted-foreground">
+                      <span>Bank charge (3%)</span>
+                      <span>₹{bankCharge.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between font-semibold text-foreground pt-1.5 border-t border-border">
+                      <span>Total payable</span>
+                      <span className="text-gold-foil">₹{TOTAL_AMOUNT}</span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -1580,8 +1669,8 @@ function Footer() {
               </li>
               <li className="flex items-center gap-2">
                 <MessageCircle className="w-4 h-4 text-primary" />
-                <a
-                  href={`https://wa.me/${SUPPORT_PHONE_E164}`}
+                
+                  <a href={`https://wa.me/${SUPPORT_PHONE_E164}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="hover:text-primary transition-colors"
