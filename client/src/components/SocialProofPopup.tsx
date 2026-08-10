@@ -140,7 +140,7 @@ export default function SocialProofPopup() {
             <div className="flex items-center gap-1.5 mt-1.5">
               <span className="text-xs text-muted-foreground">{notification.timeAgo}</span>
               <span className="w-1 h-1 rounded-full bg-primary/40" />
-              <span className="text-xs text-primary font-medium">₹299</span>
+              <span className="text-xs text-primary font-medium">₹399</span>
               <span className="w-1 h-1 rounded-full bg-primary/40" />
               <span className="text-xs text-muted-foreground flex items-center gap-0.5">
                 <CheckCircle2 className="w-3 h-3 text-primary/60" />
