@@ -47,11 +47,11 @@ import SocialProofPopup from "@/components/SocialProofPopup";
 // Yantra geometry, diya glow, gold-foil typography
 // ============================================================
 
-const HERO_BG = "/images/hero-bg_f2529d5f.png";
+const HERO_BG = "/images/hero-bg_f2529d5f.webp";
 const LOGO = "/images/logo_3c9d214b.webp";
-const REPORT_MOCKUP = "/images/report-mockup_c52d9b33.png";
-const CELEBRITY_SECTION = "/images/celebrity-section_5908310b.png";
-const GURU_PORTRAIT = "/images/guru-portrait_6e0e8c98.png";
+const REPORT_MOCKUP = "/images/report-mockup_c52d9b33.webp";
+const CELEBRITY_SECTION = "/images/celebrity-section_5908310b.webp";
+const GURU_PORTRAIT = "/images/guru-portrait_6e0e8c98.webp";
 
 // ============================================================
 // BACKEND / PAYMENT CONFIG
